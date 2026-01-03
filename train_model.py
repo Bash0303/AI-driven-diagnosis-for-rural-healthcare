@@ -23,19 +23,19 @@ def train_model():
         print("=" * 60)
         
         # Load dataset
-        print("\n[1] Loading dataset 'Symptom2Disease.csv'...")
+        print("\n[1] Loading dataset 'Symptom2disease.csv'...")
         try:
             # Try to load the dataset
-            if not os.path.exists('Symptom2Disease.csv'):
+            if not os.path.exists('Symptom2disease.csv'):
                 # Try alternative path
-                if os.path.exists('./Symptom2Disease.csv'):
-                    df = pd.read_csv('./Symptom2Disease.csv')
+                if os.path.exists('./Symptom2disease.csv'):
+                    df = pd.read_csv('./Symptom2disease.csv')
                 else:
-                    print("[ERROR] File 'Symptom2Disease.csv' not found!")
+                    print("[ERROR] File 'Symptom2disease.csv' not found!")
                     print("[INFO] Make sure the CSV file is in the same folder")
                     return output_capture.getvalue()
             else:
-                df = pd.read_csv('Symptom2Disease.csv')
+                df = pd.read_csv('Symptom2disease.csv')
             
             # Show dataset info
             print(f"Dataset shape: {df.shape}")

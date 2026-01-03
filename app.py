@@ -4,18 +4,26 @@ import numpy as np
 import joblib
 import re
 import os
-import subprocess
-import sys
 
 # ============================================
-# FIX FOR RENDER DEPLOYMENT
+# CRITICAL FIX FOR "Tried to use SessionInfo before it was initialized"
 # ============================================
-# Create necessary directories
+# Initialize session state before any Streamlit commands
+if not hasattr(st, 'session_state'):
+    st.session_state = {}
+
+# Initialize all session state variables
+if 'symptom_input' not in st.session_state:
+    st.session_state.symptom_input = ""
+if 'history' not in st.session_state:
+    st.session_state.history = []
+
+# Create models directory if it doesn't exist
 if not os.path.exists('models'):
-    os.makedirs('models')
+    os.makedirs('models', exist_ok=True)
 
 # ============================================
-# PAGE CONFIGURATION
+# PAGE CONFIGURATION - MUST BE FIRST STREAMLIT COMMAND
 # ============================================
 st.set_page_config(
     page_title="AI Driven Disease Diagnosis",
@@ -24,6 +32,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Then continue with your original code...
+# [Your existing CSS, class definitions, and the rest of your code]
 # Custom CSS for green/blue theme
 st.markdown("""
 <style>
@@ -231,7 +241,7 @@ if page == "Home":
     
     with col_status2:
         # Check if dataset exists
-        dataset_exists = os.path.exists('Symptom2Disease.csv') or os.path.exists('./Symptom2Disease.csv')
+        dataset_exists = os.path.exists('Symptom2disease.csv') or os.path.exists('./Symptom2Disease.csv')
         status_text = "Ready" if dataset_exists else "Missing"
         status_color = "#d4edda" if dataset_exists else "#f8d7da"
         border_color = "#28a745" if dataset_exists else "#dc3545"
@@ -644,7 +654,7 @@ elif page == "Dataset Info":
     st.title("📊 Dataset Information")
     
     # Check if dataset exists
-    dataset_paths = ['Symptom2Disease.csv', './Symptom2Disease.csv']
+    dataset_paths = ['Symptom2disease.csv', './Symptom2disease.csv']
     dataset_found = False
     dataset_path = None
     
@@ -656,10 +666,10 @@ elif page == "Dataset Info":
     
     if not dataset_found:
         st.error("""
-        ❌ Dataset 'Symptom2Disease.csv' not found in project folder!
+        ❌ Dataset 'Symptom2disease.csv' not found in project folder!
         
         Please make sure:
-        1. The CSV file is named exactly: `Symptom2Disease.csv`
+        1. The CSV file is named exactly: `Symptom2disease.csv`
         2. It's in the same folder as `app.py`
         3. It contains symptom descriptions and disease labels
         """)
@@ -758,7 +768,7 @@ elif page == "Train Model":
     """)
     
     # Check if dataset exists
-    dataset_paths = ['Symptom2Disease.csv', './Symptom2Disease.csv']
+    dataset_paths = ['Symptom2disease.csv', './Symptom2disease.csv']
     dataset_found = False
     
     for path in dataset_paths:
@@ -767,7 +777,7 @@ elif page == "Train Model":
             break
     
     if not dataset_found:
-        st.error("❌ Dataset 'Symptom2Disease.csv' not found!")
+        st.error("❌ Dataset 'Symptom2disease.csv' not found!")
         st.stop()
     
     # Current model status
