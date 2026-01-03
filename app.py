@@ -900,4 +900,4 @@ elif page == "Train Model":
 # FOOTER
 # ============================================
 st.sidebar.markdown("---")
-st.sidebar.caption("© 2024 AI Disease Diagnosis System | Research Project")
+st.sidebar.caption("© 2026 AI Disease Diagnosis System | Research Project")
