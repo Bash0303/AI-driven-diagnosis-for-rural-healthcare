@@ -7,19 +7,22 @@ import os
 import sys
 
 # ============================================
-# CRITICAL FIX: Initialize session state FIRST
+# FIX FOR RENDER: SIMPLIFIED SESSION INITIALIZATION
 # ============================================
-# Initialize ALL session state variables at module level
-if not hasattr(st, 'session_state'):
-    st.session_state = {}
-
-# Initialize all session state variables
-if 'symptom_input' not in st.session_state:
+# Initialize session state at the very beginning
+# Use try-except to handle any initialization issues
+try:
+    # Initialize session state variables
+    if 'symptom_input' not in st.session_state:
+        st.session_state.symptom_input = ""
+    if 'history' not in st.session_state:
+        st.session_state.history = []
+except:
+    # If session state fails, create minimal dict
+    if not hasattr(st, 'session_state'):
+        st.session_state = {}
     st.session_state.symptom_input = ""
-if 'history' not in st.session_state:
     st.session_state.history = []
-if 'page_initialized' not in st.session_state:
-    st.session_state.page_initialized = True
 
 # Create models directory if it doesn't exist
 if not os.path.exists('models'):
@@ -125,20 +128,11 @@ class DiseasePredictor:
     def load_model(self):
         """Load trained model"""
         try:
-            # Check multiple possible paths
-            possible_paths = [
-                'models/trained_model.pkl',
-                './models/trained_model.pkl'
-            ]
-            
-            model_path = None
-            for path in possible_paths:
-                if os.path.exists(path):
-                    model_path = path
-                    break
-            
-            if not model_path:
-                return False
+            model_path = 'models/trained_model.pkl'
+            if not os.path.exists(model_path):
+                model_path = './models/trained_model.pkl'
+                if not os.path.exists(model_path):
+                    return False
             
             model_data = joblib.load(model_path)
             self.model = model_data['model']
@@ -147,7 +141,6 @@ class DiseasePredictor:
             return True
             
         except Exception as e:
-            st.error(f"Error loading model: {e}")
             return False
     
     def preprocess_text(self, text):
@@ -192,11 +185,8 @@ st.sidebar.title("🏥 AI Disease Diagnosis")
 st.sidebar.markdown("---")
 
 # Navigation - ONLY 4 PAGES
-page = st.sidebar.radio(
-    "Navigate to:",
-    ["Home", "AI Diagnosis", "Dataset Info", "Train Model"],
-    key="main_navigation"
-)
+page_options = ["Home", "AI Diagnosis", "Dataset Info", "Train Model"]
+page = st.sidebar.radio("Navigate to:", page_options, key="main_navigation")
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
@@ -315,12 +305,7 @@ elif page == "AI Diagnosis":
     predictor = DiseasePredictor()
     
     # Check if model exists
-    model_paths = ['models/trained_model.pkl', './models/trained_model.pkl']
-    model_exists = False
-    for path in model_paths:
-        if os.path.exists(path):
-            model_exists = True
-            break
+    model_exists = os.path.exists('models/trained_model.pkl') or os.path.exists('./models/trained_model.pkl')
     
     if not model_exists:
         st.error("""
@@ -336,10 +321,8 @@ elif page == "AI Diagnosis":
         The model will be created in the `models/` folder.
         """)
         
-        # Use form submission instead of rerun
         if st.button("🔄 Check Again", key="check_again_btn"):
-            # Force a full page reload
-            st.experimental_rerun()
+            st.rerun()
         
         st.stop()
     
@@ -352,55 +335,63 @@ elif page == "AI Diagnosis":
     st.success("✅ AI Model loaded successfully!")
     
     # Get disease list
-    try:
-        diseases = predictor.label_encoder.classes_
-    except:
-        diseases = []
+    diseases = predictor.label_encoder.classes_
     
     # ========== DIAGNOSIS INTERFACE ==========
     st.markdown("### 📝 Enter Patient Symptoms")
     
-    # Use callback functions instead of immediate reruns
-    def add_symptom(symptom):
+    # Initialize symptom input in session state
+    if 'symptom_input' not in st.session_state:
+        st.session_state.symptom_input = ""
+    
+    # Function to update symptoms
+    def update_symptoms(symptom):
         if st.session_state.symptom_input:
             st.session_state.symptom_input = f"{st.session_state.symptom_input}, {symptom}"
         else:
             st.session_state.symptom_input = f"I have {symptom}"
     
-    # Buttons to add symptoms
+    # Quick symptom buttons
     st.markdown("**Quick add common symptoms:**")
+    col1, col2, col3, col4, col5 = st.columns(5)
     
-    col_bt1, col_bt2, col_bt3, col_bt4, col_bt5 = st.columns(5)
+    # Create buttons with on_click callbacks
+    if col1.button("Fever", key="btn_fever"):
+        update_symptoms("fever")
+        st.rerun()
     
-    # Use forms to handle button clicks without rerun issues
-    with st.form("symptoms_form"):
-        col1, col2, col3, col4, col5 = st.columns(5)
-        if col1.form_submit_button("Fever", use_container_width=True):
-            add_symptom("fever")
-        if col2.form_submit_button("Cough", use_container_width=True):
-            add_symptom("cough")
-        if col3.form_submit_button("Headache", use_container_width=True):
-            add_symptom("headache")
-        if col4.form_submit_button("Fatigue", use_container_width=True):
-            add_symptom("fatigue")
-        if col5.form_submit_button("Pain", use_container_width=True):
-            add_symptom("pain")
+    if col2.button("Cough", key="btn_cough"):
+        update_symptoms("cough")
+        st.rerun()
     
+    if col3.button("Headache", key="btn_headache"):
+        update_symptoms("headache")
+        st.rerun()
+    
+    if col4.button("Fatigue", key="btn_fatigue"):
+        update_symptoms("fatigue")
+        st.rerun()
+    
+    if col5.button("Pain", key="btn_pain"):
+        update_symptoms("pain")
+        st.rerun()
+    
+    # Symptom input area
     symptom_text = st.text_area(
         "Describe symptoms in detail:",
         height=150,
         placeholder="Example: I have fever, cough, headache, and fatigue for 2 days...",
         value=st.session_state.symptom_input,
-        key="symptom_text_area"
+        key="symptom_input_area"
     )
     
-    # Update session state from text area
+    # Update session state
     st.session_state.symptom_input = symptom_text
     
     # Clear button
-    if st.button("Clear Symptoms", key="clear_symptoms_btn"):
+    if st.button("Clear Symptoms", key="btn_clear"):
         st.session_state.symptom_input = ""
-        st.experimental_rerun()
+        st.rerun()
     
     # Patient information
     st.markdown("---")
@@ -583,6 +574,9 @@ elif page == "AI Diagnosis":
                         """)
                     
                     # Save to history
+                    if 'history' not in st.session_state:
+                        st.session_state.history = []
+                    
                     st.session_state.history.append({
                         'Time': pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
                         'Diagnosis': disease,
@@ -598,7 +592,7 @@ elif page == "AI Diagnosis":
                     st.error("❌ Could not analyze symptoms. Please try different wording.")
     
     # Show history
-    if st.session_state.history:
+    if 'history' in st.session_state and st.session_state.history:
         st.markdown("---")
         with st.expander("📖 Recent Diagnoses (Last 5)"):
             hist_df = pd.DataFrame(st.session_state.history)
@@ -606,33 +600,37 @@ elif page == "AI Diagnosis":
             
             if st.button("Clear History", key="clear_history_btn"):
                 st.session_state.history = []
-                st.experimental_rerun()
+                st.rerun()
     
     # Sample test cases
     st.markdown("---")
     st.markdown("### 🧪 Try Sample Cases")
     
-    # Use forms for sample cases too
-    with st.form("sample_cases_form"):
-        col1, col2, col3 = st.columns(3)
-        if col1.form_submit_button("Test: Skin Issues", use_container_width=True):
-            st.session_state.symptom_input = "I have red itchy skin with silver scales on my elbows and knees"
-        if col2.form_submit_button("Test: Headache", use_container_width=True):
-            st.session_state.symptom_input = "Severe headache on one side with sensitivity to light and sound"
-        if col3.form_submit_button("Test: Fever", use_container_width=True):
-            st.session_state.symptom_input = "High fever with chills and body pain for several days"
+    sample_col1, sample_col2, sample_col3 = st.columns(3)
+    
+    if sample_col1.button("Test: Skin Issues", key="sample1_btn"):
+        st.session_state.symptom_input = "I have red itchy skin with silver scales on my elbows and knees"
+        st.rerun()
+    
+    if sample_col2.button("Test: Headache", key="sample2_btn"):
+        st.session_state.symptom_input = "Severe headache on one side with sensitivity to light and sound"
+        st.rerun()
+    
+    if sample_col3.button("Test: Fever", key="sample3_btn"):
+        st.session_state.symptom_input = "High fever with chills and body pain for several days"
+        st.rerun()
     
     # Model info
     with st.expander("ℹ️ About the AI Model"):
         st.markdown(f"""
         **Model Information:**
         - **Algorithm:** Random Forest Classifier
-        - **Number of Diseases:** {len(diseases) if len(diseases) > 0 else 'Not loaded'}
+        - **Number of Diseases:** {len(diseases)}
         - **Training Data:** Symptom2disease dataset
         - **Features:** 1000 TF-IDF text features
         
         **Sample Diseases Detected:**
-        {', '.join(sorted(diseases)[:12]) if len(diseases) > 0 else 'No diseases loaded'}
+        {', '.join(sorted(diseases)[:12])}
         
         **Performance:**
         - Typical Accuracy: 85-90%
@@ -651,17 +649,9 @@ elif page == "Dataset Info":
     st.title("📊 Dataset Information")
     
     # Check if dataset exists
-    dataset_paths = ['Symptom2disease.csv', './Symptom2disease.csv']
-    dataset_found = False
-    dataset_path = None
+    dataset_exists = os.path.exists('Symptom2disease.csv') or os.path.exists('./Symptom2disease.csv')
     
-    for path in dataset_paths:
-        if os.path.exists(path):
-            dataset_found = True
-            dataset_path = path
-            break
-    
-    if not dataset_found:
+    if not dataset_exists:
         st.error("""
         ❌ Dataset 'Symptom2disease.csv' not found in project folder!
         
@@ -674,6 +664,10 @@ elif page == "Dataset Info":
     
     # Load dataset
     try:
+        dataset_path = 'Symptom2disease.csv'
+        if not os.path.exists(dataset_path):
+            dataset_path = './Symptom2disease.csv'
+        
         df = pd.read_csv(dataset_path)
         
         # Handle column names
@@ -765,15 +759,9 @@ elif page == "Train Model":
     """)
     
     # Check if dataset exists
-    dataset_paths = ['Symptom2disease.csv', './Symptom2disease.csv']
-    dataset_found = False
+    dataset_exists = os.path.exists('Symptom2disease.csv') or os.path.exists('./Symptom2disease.csv')
     
-    for path in dataset_paths:
-        if os.path.exists(path):
-            dataset_found = True
-            break
-    
-    if not dataset_found:
+    if not dataset_exists:
         st.error("❌ Dataset 'Symptom2disease.csv' not found!")
         st.stop()
     
@@ -781,19 +769,16 @@ elif page == "Train Model":
     st.markdown("---")
     st.subheader("Current Status")
     
-    model_paths = ['models/trained_model.pkl', './models/trained_model.pkl']
-    model_exists = False
-    
-    for path in model_paths:
-        if os.path.exists(path):
-            model_exists = True
-            model_path = path
-            break
+    model_exists = os.path.exists('models/trained_model.pkl') or os.path.exists('./models/trained_model.pkl')
     
     if model_exists:
         st.success("✅ Model is already trained!")
         
         try:
+            model_path = 'models/trained_model.pkl'
+            if not os.path.exists(model_path):
+                model_path = './models/trained_model.pkl'
+            
             model_data = joblib.load(model_path)
             diseases = model_data['label_encoder'].classes_
             
@@ -832,7 +817,6 @@ elif page == "Train Model":
         
         try:
             # Import training module
-            sys.path.insert(0, '.')
             from train_model import train_model
             
             # Run training
@@ -843,18 +827,14 @@ elif page == "Train Model":
             output_container.code(output, language='text')
             
             # Check if model was created
-            model_created = False
-            for path in ['models/trained_model.pkl', './models/trained_model.pkl']:
-                if os.path.exists(path):
-                    model_created = True
-                    break
+            model_created = os.path.exists('models/trained_model.pkl') or os.path.exists('./models/trained_model.pkl')
             
             if model_created:
                 st.success("✅ Training completed successfully!")
                 st.balloons()
                 
                 if st.button("🔄 Refresh Page", key="refresh_btn"):
-                    st.experimental_rerun()
+                    st.rerun()
             else:
                 st.error("Training completed but model file was not created.")
                 
@@ -888,19 +868,18 @@ elif page == "Train Model":
             col_check1, col_check2 = st.columns(2)
             
             with col_check1:
-                model_found = False
-                for path in ['models/trained_model.pkl', './models/trained_model.pkl']:
-                    if os.path.exists(path):
-                        model_found = True
-                        st.success(f"✅ {path} exists")
-                        try:
-                            size = os.path.getsize(path)
-                            st.info(f"Size: {size:,} bytes")
-                        except:
-                            pass
-                        break
-                
-                if not model_found:
+                model_exists = os.path.exists('models/trained_model.pkl') or os.path.exists('./models/trained_model.pkl')
+                if model_exists:
+                    st.success("✅ trained_model.pkl exists")
+                    try:
+                        if os.path.exists('models/trained_model.pkl'):
+                            size = os.path.getsize('models/trained_model.pkl')
+                        else:
+                            size = os.path.getsize('./models/trained_model.pkl')
+                        st.info(f"Size: {size:,} bytes")
+                    except:
+                        pass
+                else:
                     st.error("❌ trained_model.pkl not found")
             
             with col_check2:
