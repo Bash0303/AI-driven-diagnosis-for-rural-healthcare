@@ -6,5 +6,7 @@ headless = true\n\
 port = \$PORT\n\
 enableCORS = false\n\
 enableXsrfProtection = false\n\
-\n\
+[browser]\n\
+serverAddress = \"0.0.0.0\"\n\
+serverPort = \$PORT\n\
 " > ~/.streamlit/config.toml

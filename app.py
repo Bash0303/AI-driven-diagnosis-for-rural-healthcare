@@ -4,11 +4,12 @@ import numpy as np
 import joblib
 import re
 import os
+import sys
 
 # ============================================
-# CRITICAL FIX FOR "Tried to use SessionInfo before it was initialized"
+# CRITICAL FIX: Initialize session state FIRST
 # ============================================
-# Initialize session state before any Streamlit commands
+# Initialize ALL session state variables at module level
 if not hasattr(st, 'session_state'):
     st.session_state = {}
 
@@ -17,6 +18,8 @@ if 'symptom_input' not in st.session_state:
     st.session_state.symptom_input = ""
 if 'history' not in st.session_state:
     st.session_state.history = []
+if 'page_initialized' not in st.session_state:
+    st.session_state.page_initialized = True
 
 # Create models directory if it doesn't exist
 if not os.path.exists('models'):
@@ -32,9 +35,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Then continue with your original code...
-# [Your existing CSS, class definitions, and the rest of your code]
-# Custom CSS for green/blue theme
+# ============================================
+# CUSTOM CSS
+# ============================================
 st.markdown("""
 <style>
     .main {
@@ -122,12 +125,20 @@ class DiseasePredictor:
     def load_model(self):
         """Load trained model"""
         try:
-            model_path = 'models/trained_model.pkl'
-            if not os.path.exists(model_path):
-                # Try alternative path for Render
-                model_path = './models/trained_model.pkl'
-                if not os.path.exists(model_path):
-                    return False
+            # Check multiple possible paths
+            possible_paths = [
+                'models/trained_model.pkl',
+                './models/trained_model.pkl'
+            ]
+            
+            model_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    model_path = path
+                    break
+            
+            if not model_path:
+                return False
             
             model_data = joblib.load(model_path)
             self.model = model_data['model']
@@ -183,7 +194,8 @@ st.sidebar.markdown("---")
 # Navigation - ONLY 4 PAGES
 page = st.sidebar.radio(
     "Navigate to:",
-    ["Home", "AI Diagnosis", "Dataset Info", "Train Model"]
+    ["Home", "AI Diagnosis", "Dataset Info", "Train Model"],
+    key="main_navigation"
 )
 
 st.sidebar.markdown("---")
@@ -241,7 +253,7 @@ if page == "Home":
     
     with col_status2:
         # Check if dataset exists
-        dataset_exists = os.path.exists('Symptom2disease.csv') or os.path.exists('./Symptom2Disease.csv')
+        dataset_exists = os.path.exists('Symptom2disease.csv') or os.path.exists('./Symptom2disease.csv')
         status_text = "Ready" if dataset_exists else "Missing"
         status_color = "#d4edda" if dataset_exists else "#f8d7da"
         border_color = "#28a745" if dataset_exists else "#dc3545"
@@ -276,7 +288,7 @@ if page == "Home":
     with st.expander("How to use this system"):
         st.markdown("""
         **Step 1: Prepare Data**
-        - Ensure `Symptom2Disease.csv` is in your project folder
+        - Ensure `Symptom2disease.csv` is in your project folder
         
         **Step 2: Train Model**
         - Go to "Train Model" page
@@ -290,7 +302,7 @@ if page == "Home":
         
         **Requirements:**
         - Python 3.8+
-        - Dataset: Symptom2Disease.csv
+        - Dataset: Symptom2disease.csv
         """)
 
 # ============================================
@@ -324,8 +336,10 @@ elif page == "AI Diagnosis":
         The model will be created in the `models/` folder.
         """)
         
+        # Use form submission instead of rerun
         if st.button("🔄 Check Again", key="check_again_btn"):
-            st.rerun()
+            # Force a full page reload
+            st.experimental_rerun()
         
         st.stop()
     
@@ -338,17 +352,16 @@ elif page == "AI Diagnosis":
     st.success("✅ AI Model loaded successfully!")
     
     # Get disease list
-    diseases = predictor.label_encoder.classes_
+    try:
+        diseases = predictor.label_encoder.classes_
+    except:
+        diseases = []
     
     # ========== DIAGNOSIS INTERFACE ==========
-    # Initialize session state for symptom input
-    if 'symptom_input' not in st.session_state:
-        st.session_state.symptom_input = ""
-    
     st.markdown("### 📝 Enter Patient Symptoms")
     
-    # Function to handle symptom updates
-    def update_symptom_in_state(symptom):
+    # Use callback functions instead of immediate reruns
+    def add_symptom(symptom):
         if st.session_state.symptom_input:
             st.session_state.symptom_input = f"{st.session_state.symptom_input}, {symptom}"
         else:
@@ -359,26 +372,19 @@ elif page == "AI Diagnosis":
     
     col_bt1, col_bt2, col_bt3, col_bt4, col_bt5 = st.columns(5)
     
-    # Create callback functions for each button
-    if col_bt1.button("Fever", key="fever_btn", use_container_width=True):
-        update_symptom_in_state("fever")
-        st.rerun()
-    
-    if col_bt2.button("Cough", key="cough_btn", use_container_width=True):
-        update_symptom_in_state("cough")
-        st.rerun()
-    
-    if col_bt3.button("Headache", key="headache_btn", use_container_width=True):
-        update_symptom_in_state("headache")
-        st.rerun()
-    
-    if col_bt4.button("Fatigue", key="fatigue_btn", use_container_width=True):
-        update_symptom_in_state("fatigue")
-        st.rerun()
-    
-    if col_bt5.button("Pain", key="pain_btn", use_container_width=True):
-        update_symptom_in_state("pain")
-        st.rerun()
+    # Use forms to handle button clicks without rerun issues
+    with st.form("symptoms_form"):
+        col1, col2, col3, col4, col5 = st.columns(5)
+        if col1.form_submit_button("Fever", use_container_width=True):
+            add_symptom("fever")
+        if col2.form_submit_button("Cough", use_container_width=True):
+            add_symptom("cough")
+        if col3.form_submit_button("Headache", use_container_width=True):
+            add_symptom("headache")
+        if col4.form_submit_button("Fatigue", use_container_width=True):
+            add_symptom("fatigue")
+        if col5.form_submit_button("Pain", use_container_width=True):
+            add_symptom("pain")
     
     symptom_text = st.text_area(
         "Describe symptoms in detail:",
@@ -389,13 +395,12 @@ elif page == "AI Diagnosis":
     )
     
     # Update session state from text area
-    if symptom_text != st.session_state.symptom_input:
-        st.session_state.symptom_input = symptom_text
+    st.session_state.symptom_input = symptom_text
     
     # Clear button
     if st.button("Clear Symptoms", key="clear_symptoms_btn"):
         st.session_state.symptom_input = ""
-        st.rerun()
+        st.experimental_rerun()
     
     # Patient information
     st.markdown("---")
@@ -578,9 +583,6 @@ elif page == "AI Diagnosis":
                         """)
                     
                     # Save to history
-                    if 'history' not in st.session_state:
-                        st.session_state.history = []
-                    
                     st.session_state.history.append({
                         'Time': pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
                         'Diagnosis': disease,
@@ -596,7 +598,7 @@ elif page == "AI Diagnosis":
                     st.error("❌ Could not analyze symptoms. Please try different wording.")
     
     # Show history
-    if 'history' in st.session_state and st.session_state.history:
+    if st.session_state.history:
         st.markdown("---")
         with st.expander("📖 Recent Diagnoses (Last 5)"):
             hist_df = pd.DataFrame(st.session_state.history)
@@ -604,38 +606,33 @@ elif page == "AI Diagnosis":
             
             if st.button("Clear History", key="clear_history_btn"):
                 st.session_state.history = []
-                st.rerun()
+                st.experimental_rerun()
     
     # Sample test cases
     st.markdown("---")
     st.markdown("### 🧪 Try Sample Cases")
     
-    sample_col1, sample_col2, sample_col3 = st.columns(3)
-    
-    # Sample cases with immediate updates
-    if sample_col1.button("Test: Skin Issues", key="sample1_btn", use_container_width=True):
-        st.session_state.symptom_input = "I have red itchy skin with silver scales on my elbows and knees"
-        st.rerun()
-    
-    if sample_col2.button("Test: Headache", key="sample2_btn", use_container_width=True):
-        st.session_state.symptom_input = "Severe headache on one side with sensitivity to light and sound"
-        st.rerun()
-    
-    if sample_col3.button("Test: Fever", key="sample3_btn", use_container_width=True):
-        st.session_state.symptom_input = "High fever with chills and body pain for several days"
-        st.rerun()
+    # Use forms for sample cases too
+    with st.form("sample_cases_form"):
+        col1, col2, col3 = st.columns(3)
+        if col1.form_submit_button("Test: Skin Issues", use_container_width=True):
+            st.session_state.symptom_input = "I have red itchy skin with silver scales on my elbows and knees"
+        if col2.form_submit_button("Test: Headache", use_container_width=True):
+            st.session_state.symptom_input = "Severe headache on one side with sensitivity to light and sound"
+        if col3.form_submit_button("Test: Fever", use_container_width=True):
+            st.session_state.symptom_input = "High fever with chills and body pain for several days"
     
     # Model info
     with st.expander("ℹ️ About the AI Model"):
         st.markdown(f"""
         **Model Information:**
         - **Algorithm:** Random Forest Classifier
-        - **Number of Diseases:** {len(diseases)}
-        - **Training Data:** Symptom2Disease dataset
+        - **Number of Diseases:** {len(diseases) if len(diseases) > 0 else 'Not loaded'}
+        - **Training Data:** Symptom2disease dataset
         - **Features:** 1000 TF-IDF text features
         
         **Sample Diseases Detected:**
-        {', '.join(sorted(diseases)[:12])}
+        {', '.join(sorted(diseases)[:12]) if len(diseases) > 0 else 'No diseases loaded'}
         
         **Performance:**
         - Typical Accuracy: 85-90%
@@ -764,7 +761,7 @@ elif page == "Train Model":
     st.markdown("""
     ## Train Your AI Disease Diagnosis Model
     
-    This page trains the AI model using your Symptom2Disease dataset.
+    This page trains the AI model using your Symptom2disease dataset.
     """)
     
     # Check if dataset exists
@@ -835,7 +832,7 @@ elif page == "Train Model":
         
         try:
             # Import training module
-            sys.path.append('.')
+            sys.path.insert(0, '.')
             from train_model import train_model
             
             # Run training
@@ -857,7 +854,7 @@ elif page == "Train Model":
                 st.balloons()
                 
                 if st.button("🔄 Refresh Page", key="refresh_btn"):
-                    st.rerun()
+                    st.experimental_rerun()
             else:
                 st.error("Training completed but model file was not created.")
                 
