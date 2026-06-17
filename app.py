@@ -32,7 +32,7 @@ if not os.path.exists('models'):
 # PAGE CONFIGURATION - MUST BE FIRST STREAMLIT COMMAND
 # ============================================
 st.set_page_config(
-    page_title="AI Driven Disease Diagnosis",
+    page_title="AI Driven Disease Detection",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -181,17 +181,17 @@ class DiseasePredictor:
 # SIDEBAR NAVIGATION
 # ============================================
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3063/3063812.png", width=100)
-st.sidebar.title("🏥 AI Disease Diagnosis")
+st.sidebar.title("🏥 AI Disease Detection")
 st.sidebar.markdown("---")
 
 # Navigation - ONLY 4 PAGES
-page_options = ["Home", "AI Diagnosis", "Dataset Info", "Train Model"]
+page_options = ["Home", "AI Detection", "Dataset Info", "Train Model"]
 page = st.sidebar.radio("Navigate to:", page_options, key="main_navigation")
 
 st.sidebar.markdown("---")
 st.sidebar.info("""
 **Research Project**
-AI-Driven Disease Diagnosis
+AI-Driven Disease Detection
 for Rural Healthcare
 """)
 
@@ -199,7 +199,7 @@ for Rural Healthcare
 # PAGE 1: HOME
 # ============================================
 if page == "Home":
-    st.title("AI-Driven Disease Diagnosis System for Rural Health Care")
+    st.title("AI-Driven Disease Detection System for Rural Health Care")
     
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -213,7 +213,7 @@ if page == "Home":
         **Key Features:**
         - Natural language symptom analysis
         - Instant disease predictions
-        - Top 3 possible diagnoses with confidence scores
+        - Top 3 possible detections with confidence scores
         - Treatment recommendations
         - User-friendly interface
         """)
@@ -285,10 +285,10 @@ if page == "Home":
         - Click "Start Training"
         - Wait for completion
         
-        **Step 3: Test Diagnosis**
-        - Go to "AI Diagnosis" page
+        **Step 3: Test Detection**
+        - Go to "AI Detection" page
         - Enter symptoms
-        - Get instant diagnosis
+        - Get instant detection
         
         **Requirements:**
         - Python 3.8+
@@ -296,10 +296,10 @@ if page == "Home":
         """)
 
 # ============================================
-# PAGE 2: AI DIAGNOSIS
+# PAGE 2: AI DETECTION
 # ============================================
-elif page == "AI Diagnosis":
-    st.title("AI-Powered Disease Diagnosis")
+elif page == "AI Detection":
+    st.title("AI-Powered Disease Detection")
     
     # Initialize predictor
     predictor = DiseasePredictor()
@@ -337,7 +337,7 @@ elif page == "AI Diagnosis":
     # Get disease list
     diseases = predictor.label_encoder.classes_
     
-    # ========== DIAGNOSIS INTERFACE ==========
+# ========== DETECTION INTERFACE ========== 
     st.markdown("### 📝 Enter Patient Symptoms")
     
     # Initialize symptom input in session state
@@ -437,9 +437,9 @@ elif page == "AI Diagnosis":
         </div>
         """, unsafe_allow_html=True)
     
-    # Diagnosis button
+    # Detection button
     st.markdown("---")
-    if st.button("🔍 RUN AI DIAGNOSIS", type="primary", use_container_width=True, key="diagnose_btn"):
+    if st.button("🔍 RUN AI DETECTION", type="primary", use_container_width=True, key="diagnose_btn"):
         current_symptoms = st.session_state.symptom_input
         
         if not current_symptoms.strip():
@@ -451,9 +451,7 @@ elif page == "AI Diagnosis":
                 
                 if disease:
                     # Display results
-                    st.markdown("## 📋 Diagnosis Results")
-                    
-                    confidence = max(probs) * 100
+                        st.markdown("## 📋 Detection Results")
                     
                     # Results columns
                     col_res1, col_res2 = st.columns([2, 1])
@@ -472,7 +470,7 @@ elif page == "AI Diagnosis":
                         
                         st.markdown(f"""
                         <div style="background-color: {box_color}; padding: 20px; border-radius: 10px; border-left: 5px solid {border_color};">
-                        <h3 style="color: #006400;">Primary Diagnosis: {disease}</h3>
+                        <h3 style="color: #006400;">Primary Detection: {disease}</h3>
                         <p><strong>Confidence Level:</strong> {confidence:.1f}%</p>
                         <p><strong>Patient:</strong> {age}y/o {gender}, symptoms for {duration}</p>
                         <p><strong>Vital Signs:</strong> Temp: {temp}°C, HR: {hr} bpm, BP: {bp_sys}/{bp_dia} mmHg</p>
@@ -500,7 +498,7 @@ elif page == "AI Diagnosis":
                             )
                         ])
                         fig.update_layout(
-                            title="Diagnosis Confidence",
+                            title="Detection Confidence",
                             xaxis_title="Probability (%)",
                             height=250,
                             showlegend=False,
@@ -579,7 +577,7 @@ elif page == "AI Diagnosis":
                     
                     st.session_state.history.append({
                         'Time': pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
-                        'Diagnosis': disease,
+                        'Detection': disease,
                         'Confidence': f"{confidence:.1f}%",
                         'Symptoms': current_symptoms[:50] + ("..." if len(current_symptoms) > 50 else "")
                     })
@@ -594,7 +592,7 @@ elif page == "AI Diagnosis":
     # Show history
     if 'history' in st.session_state and st.session_state.history:
         st.markdown("---")
-        with st.expander("📖 Recent Diagnoses (Last 5)"):
+        with st.expander("📖 Recent Detections (Last 5)"):
             hist_df = pd.DataFrame(st.session_state.history)
             st.dataframe(hist_df, use_container_width=True)
             
@@ -638,7 +636,7 @@ elif page == "AI Diagnosis":
         - Offline Capable: Yes
         
         **Important Note:**
-        This AI is a diagnostic **assistant tool only**.
+        This AI is a detection **assistant tool only**.
         Always consult with qualified healthcare professionals for final diagnosis and treatment.
         """)
 
@@ -753,7 +751,7 @@ elif page == "Train Model":
     st.title("⚙️ Model Training")
     
     st.markdown("""
-    ## Train Your AI Disease Diagnosis Model
+    ## Train Your AI Disease Detection Model
     
     This page trains the AI model using your Symptom2disease dataset.
     """)
@@ -900,4 +898,4 @@ elif page == "Train Model":
 # FOOTER
 # ============================================
 st.sidebar.markdown("---")
-st.sidebar.caption("© 2026 AI Disease Diagnosis System | Research Project")
+st.sidebar.caption("© 2026 AI Disease Detection System | Research Project")

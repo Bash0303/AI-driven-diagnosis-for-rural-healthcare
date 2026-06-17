@@ -12,14 +12,14 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report
 
 def train_model():
-    """Train the disease diagnosis model and return output as string"""
+    """Train the disease detection model and return output as string"""
     output_capture = io.StringIO()
     original_stdout = sys.stdout
     sys.stdout = output_capture
     
     try:
         print("=" * 60)
-        print("AI DISEASE DIAGNOSIS MODEL TRAINING")
+        print("AI DISEASE DETECTION MODEL TRAINING")
         print("=" * 60)
         
         # Load dataset
@@ -196,7 +196,7 @@ def train_model():
         print("✅ TRAINING COMPLETE!")
         print("=" * 60)
         print("\nNext steps:")
-        print("1. Go to 'AI Diagnosis' page in the app")
+        print("1. Go to 'AI Detection' page in the app")
         print("2. Enter symptoms to get predictions")
         print("3. Model is ready for use!")
         
