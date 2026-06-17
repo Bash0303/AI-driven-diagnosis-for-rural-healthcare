@@ -451,11 +451,13 @@ elif page == "AI Detection":
                 
                 if disease:
                     # Display results
-                        st.markdown("## 📋 Detection Results")
-                    
+                    st.markdown("## 📋 Detection Results")
+
+                    confidence = max(probs) * 100
+
                     # Results columns
                     col_res1, col_res2 = st.columns([2, 1])
-                    
+
                     with col_res1:
                         # Result box
                         if confidence > 80:
@@ -467,7 +469,7 @@ elif page == "AI Detection":
                         else:
                             box_color = "#f8d7da"
                             border_color = "#dc3545"
-                        
+
                         st.markdown(f"""
                         <div style="background-color: {box_color}; padding: 20px; border-radius: 10px; border-left: 5px solid {border_color};">
                         <h3 style="color: #006400;">Primary Detection: {disease}</h3>
@@ -476,17 +478,17 @@ elif page == "AI Detection":
                         <p><strong>Vital Signs:</strong> Temp: {temp}°C, HR: {hr} bpm, BP: {bp_sys}/{bp_dia} mmHg</p>
                         </div>
                         """, unsafe_allow_html=True)
-                        
+
                         # Top predictions
                         st.markdown("#### Top 3 Predictions:")
                         for d, p in zip(top_diseases, probs):
                             percentage = p * 100
                             st.progress(float(p), text=f"{d}: {percentage:.1f}%")
-                    
+
                     with col_res2:
                         # Create probability chart
                         import plotly.graph_objects as go
-                        
+
                         fig = go.Figure(data=[
                             go.Bar(
                                 x=[p*100 for p in probs],
@@ -505,7 +507,7 @@ elif page == "AI Detection":
                             plot_bgcolor='rgba(0,0,0,0)'
                         )
                         st.plotly_chart(fig, use_container_width=True)
-                    
+
                     # Treatment recommendations
                     st.markdown("---")
                     st.markdown("### 💡 Recommended Actions")
